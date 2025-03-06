@@ -27,6 +27,7 @@ url: "https://gustrb.github.io/" # the base hostname & protocol for your site, e
 twitter_username: gustrbcodes
 github_username:  Gustrb
 
+
 # Build settings
 theme: minima
 plugins:

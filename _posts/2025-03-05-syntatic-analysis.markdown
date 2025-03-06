@@ -3,6 +3,8 @@ layout: post
 title:  "Reading through Syntatic Analysis (Chomsky, 1957)"
 date:   2025-03-05
 categories: books linguistics
+usemathjax: true
+
 ---
 
 # First some context...
@@ -168,3 +170,212 @@ They appear randomly scattered in the list.
 - Statistical models may help with some aspects of language (e.g., predicting the next word in a sentence) but cannot define what is grammatical and what is not.
 
 This leads to Chomsky’s famous conclusion: Grammar is an **independent system**, and understanding it requires formal rules, not just statistical analysis
+
+## *An Elementary Linguistic Theory (chapter 3)*
+
+In this chapter, Chomsky begins by asking the question:
+
+```
+Assuming the set of grammatical sentences of English to be
+given, we now ask what sort of device can produce this set (equi-
+valently, what sort of theory gives an adequate account of the
+structure of this set of utterances).
+```
+
+Then, he explains that if we think of a sentence as being a finite sequence of phonemes, and that if we want to define the **language as the set of possible phonemes** the **grammar** would be so huge that render it pratically useless.
+
+Given that, Chomsky introduces what he calls *levels of representations* which, for us, computer scientists is, nothing more than, levels of **abstraction**. So that instead of reasoning about **phonemes** linguists should study morphemes and states separately the morphemic structure of sentences and the phonemic structure of morphemes
+
+### Finite languages
+
+Chomsky goes through, one requirement of grammars is that it has to be finite. Since otherwise, a grammar could be defined as just the list of all morpheme sequences (it would be absurd since there are infinite morpheme sequences).
+
+From that, he goes on to provide the definition of state machines. He says the following:
+
+```
+Suppose that we have a machine that can
+be in any one of a finite number of different internal states, and
+suppose that this machine switches from one state to another by
+producing a certain symbol (let us say, an English word). One of
+these states is an initial state; another is a final state. Suppose that
+the machine begins in the initial state, runs through a sequence of
+states (producing a word with each transition), and ends in the final
+state.
+```
+
+Using this definition, he says that this machine is capable of generating sentences (english). And he says that each language that can be generated from a state machine like so is called a *finite state language*.
+And the machine itself is called a *finite state **grammar***
+
+Usually finite state grammars are represented through state diagrams, here is the example for a grammar that generates the sentences: *"the man comes"* and *"the men come"*.
+
+![The man comes (state machine)]({{site.url}}/assets/syntatic-analysis/the-man-comes.png)
+
+If we want to extend this grammar to handle an infinite number of senteces, such as: *the old man comes* or *the old old men come*, etc. We could use the following grammar
+
+![The old man comes (state machine)]({{site.url}}/assets/syntatic-analysis/the-old-man-comes.png)
+
+To build sentences in the languages defined by those machines, we start at the left, and procceed to the right, each "word" we generate leads us to a different internal state of the machine.
+The machines that produce theese languages are called [*"finite state Markov processes*](https://stats.libretexts.org/Bookshelves/Probability_Theory/Probability_Mathematical_Statistics_and_Stochastic_Processes_(Siegrist)/16%3A_Markov_Processes/16.01%3A_Introduction_to_Markov_Processes#:~:text=A%20Markov%20process%20is%20a,important%20of%20all%20random%20processes.)
+
+Here is some simple code that implements the given state machine:
+
+{% highlight python %}
+initial = 0
+final   = {4}
+states  = {0, 1, 2, 3, 4}
+state   = initial
+table   = {
+    (0, 'the'): 1,
+    (1, 'old'): 1,
+    (1, 'man'): 2,
+    (1, 'men'): 3,
+    (2, 'comes'): 4,
+    (3, 'come'): 4,
+}
+
+acc = ''
+while state not in final:
+    word = input('Enter a word: ')
+    acc += ' ' + word
+
+    if (state, word) in table:
+        state = table[(state, word)]
+    else:
+        print('Invalid word')
+        break
+
+if state in final:
+    print('Accepted:', acc)    
+else:
+    print('Rejected:', acc)
+{% endhighlight %}
+
+### English is **not** a finite state language.
+
+- English has dependencies between words that cannot be captured by a simple state transition system.
+- For example, in "If the man comes, the party will start", the word comes depends on if, even though other words separate them.
+- Finite-state grammars cannot handle long-distance dependencies like this, since it can't know the path it took to get to a certain point since it doesn't have **'memory'**
+
+### Where does finite-state grammars fail
+
+Chomsky provides 3 examples of languages we cannot use finite state grammars to recognize. They are:
+
+1. ab, aabb, aaabbb, ..., and in general, al sentences consisting of n occurrences of a followed by n occurrences of b and only these;
+
+2. aa, bb, abba, baab, aaaa, bbbb, aabbaa, abbbba, ..., and
+in general, al sentences consisting of a string X followed
+by the 'mirror image' of X (i.e., X in reverse), and only these;
+
+3. aa, bb, abab, baba, aaaa, bbbb, aabaab, abbabb, ..., and in
+general, all sentences consisting of a string X of a's and b's
+followed by the identical string X, and only these.
+
+Since they all would require some sort of memory to know how did the state machine ended up where it did.
+
+### English Sentences and Non-Regular Structure
+
+Chomsky then shows that English has similar patterns that require more than a finite-state grammar.
+
+1. Conditionals & Logical Dependencies
+- Example: "If S₁, then S₂"
+- "If" requires "then" later in the sentence.
+- The dependency remains even if S₁ is arbitrarily complex.
+- A finite-state grammar cannot enforce such dependencies because it only looks at the last word.
+
+2. Subject-Verb Agreement Across Embeddings
+- Example: "The man who said that the boy is leaving arrives today."
+- The verb "arrives" depends on "man," not on "boy."
+- The finite-state grammar gets confused by the nested structure.
+- This is similar to (aⁿbⁿ), where dependencies span across intervening material.
+
+3. Recursive Nesting of Sentences
+
+- Example: "Either S₁ or S₂, but if S₃ then S₄."
+- The structure resembles (mirror image patterns) where dependencies exist across arbitrary-length insertions.
+- Finite-state grammars cannot track these nested structures.
+
+Thus, Chomsky concludes:
+```
+"English is not a finite-state language."
+Instead, English requires a context-free grammar
+(or more powerful models like transformational grammar).
+```
+
+### The Pumping Lemma
+
+If a language L is **regular**, then there exists a constant p (called the **pumping length**) such that any string $$w ∈ L$$ with $$ \|w\|≥p $$ can be split into three parts:
+
+$$ w = xyz $$
+
+Such that:
+
+1. **(Pumping condition)** $$ xy^nz ∈ L $$ for all $$ n ≥ 0$$ (i.e we can "pump" $$y$$ any number of times, including 0 times, and still get a valid string in the language.)
+2. **(Non-empty pump)** $$ \|y\| > 0 $$ (the middle part must contain at least one character).
+3. **(Bounded first two parts)** $$ \|xy\| ≤ p $$ (ensures that the "pumped" section is within the first p characters).
+
+### Proving that $$ L = \{a^nb^n | n ≥ 0\} $$ is not Regular
+
+We want to show that the language:
+
+$$ L = \{a^nb^n | n ≥ 0\} $$
+
+is **not** regular.
+
+#### Assume L is regular
+By the pumping lemma, there exists a pumping length 
+
+#### Choose a string w in L
+Let’s take:
+
+$$ w = a^pb^p = aaaaa...aabbbbb...bb$$
+
+where there are p a’s followed by p b’s.
+
+#### Split w into xyz
+Since $$ \|xy\| ≤ p $$, and $$ y ≠ ε $$, the segment xy must be made up of only a's (because we haven't reached the b's yet).
+So we assume:
+
+$$ x = a^m $$
+
+$$ y = a^k $$
+
+$$ z = a^{p-m-k}b^p $$
+
+where $$ y = a^k $$ (at least one a)
+
+#### Pump y (increase or remove copies of a)
+
+- If we pump up (e.g. repeat y twice), we get:
+$$ xyyz = a^{m+k+k}a^{p-m-k}b^p = a^{p+k}b^p $$
+
+Which has more a's than b's - this is **not** in L.
+
+#### Contradiction
+
+Since $$ xy^nz ∉ L $$ for some n, the pumping lemma does not hold.
+Thus, L is not regular.
+
+### Back to the chapter
+
+After this detour, Chomsky argues the following:
+1. Arbitrary Limits Do Not Reflect Language Reality
+- One could artificially impose a limit on recursive sentence structures (e.g., allowing only sentences up to a fixed length), making English a finite-state language.
+- But such an arbitrary restriction does not align with how language actually works—people can form sentences of arbitrary length in principle.
+
+2. Finite-State Grammars Cannot Capture Recursive Processes
+- English sentences can be formed by recursive rules, such as embedding clauses inside other clauses:
+    The man who said [that the woman who saw [the child who ran]] is arriving today.
+- A finite-state grammar, which generates sentences by moving from one word to the next in a step-by-step process, cannot track such long-range dependencies.
+
+3. Two Failures of Finite-State Grammars
+- Overgeneration: If an FSG is designed to generate all English sentences, it will also produce many ungrammatical sentences.
+- Undergeneration: If an FSG is made more restrictive, it will fail to generate many valid English sentences.
+
+4. Finite-State Grammars Are the Simplest Model, but Still Inadequate
+- They are the minimal theory worth considering since they can, in a limited way, generate infinite sentences.
+- However, their limitations force the search for a more powerful grammar, such as phrase-structure grammars or transformational grammars.
+
+5. A More Abstract Model of Grammar is Needed
+- Language cannot be fully described as a simple left-to-right sequence of words.
+- Instead, a grammar must account for hierarchical structures (e.g., nested phrases, dependencies across clauses).
+- This requires a more general theory of linguistic levels, rather than just finite sequences of symbols.
