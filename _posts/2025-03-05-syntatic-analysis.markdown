@@ -379,3 +379,105 @@ After this detour, Chomsky argues the following:
 - Language cannot be fully described as a simple left-to-right sequence of words.
 - Instead, a grammar must account for hierarchical structures (e.g., nested phrases, dependencies across clauses).
 - This requires a more general theory of linguistic levels, rather than just finite sequences of symbols.
+
+## *Phrase Structure (chapter 4)*
+
+### A stronger model for linguistic analysis
+
+In this chapter, Chomsky begins by defining the concept of **constituent analysis** a.k.a *parsing*.
+Then, he proceeds to says that a **grammar** defined by this sort is much more powerful than the finite state model described above.
+
+### A cool example
+
+- (**I**) Sentence -> NP + VP
+- (**II**) NP -> T + N
+- (**III**) VP -> Verb + NP
+- (**IV**) T -> the
+- (**V**) N -> man, ball, etc.
+- (**VI**) Verb -> hit, took, etc.
+
+Chomsky says, that we think of those rules as *replacement* rules. So we should mentally think of X -> Y "rewrite X as Y".
+To build sentences from this grammar, we perform a process called **derivation**. There are an infinite number of possible derivations from a given grammaer, here is one example:
+
+![Derivation example)]({{site.url}}/assets/syntatic-analysis/derivation.png)
+
+We can also represent a derivation using a tree-like diagram, but we end up losing some information on the order the rules were applied when we represent it like that.
+
+![Derivation example)]({{site.url}}/assets/syntatic-analysis/tree-like-derivation.png)
+
+Here is some simple python code to recognize said grammar:
+{% highlight python %}
+class Parser:
+    def __init__(self, toks):
+        self.toks = toks
+        self.i = 0
+
+    def is_grammatical(self):
+        l = self.parseSentence()
+        return self.i == len(self.toks) and l
+
+    def parseSentence(self):
+        return self.parseNP() and self.parseVP()
+    
+    def parseNP(self):
+        return self.parseT() and self.parseN()
+    
+    def parseT(self):
+        el = self.toks[self.i]
+        self.i += 1
+        return el == "the"
+    
+    def parseN(self):
+        el = self.toks[self.i]
+        self.i += 1
+        return el in ['man', 'ball']
+    
+    def parseVP(self):
+        return self.parseVerb() and self.parseNP()
+    
+    def parseVerb(self):
+        el = self.toks[self.i]
+        self.i += 1
+        return el in ['hit', 'took']
+
+{% endhighlight %}
+
+```
+A sequence of words of this sentence is a constituent
+of type Z if we can trace this sequence back to a single point of
+origin in (15), and this point of origin is labelled Z. 
+```
+
+Therefore, *"hit the ball"* can be traced back to **VP** in the tree diagram above, so, "hit the ball" is a **VP** in the derived sentence.
+"man hit" cannot be traced back to any single point, hence, it is not a constituent at all.
+
+He also provides the definition of **equivalent** derivations, they are: *two derivations that reduce to the same diagram of the form (15, tree diagram)*
+
+He then defines the concept of ambiguous grammar, that is, when a grammar permits us to construct nonequivalent derivations for a given sequence, we call that **constructional homonymity** and if the grammar is correct, the sentence is said to be **ambiguous**.
+
+### A generalization of the grammar
+
+He then says, that we must be able to generalize the example grammar that we have been dealing with in this chapter, that **T** must be rewritten as *a* if the noun is singular, but not if it is plural.
+So, in general, if we want to limit the rewriting of X as Y to the context X - W, we can state the following rule:
+
+$$Z + X + W → Z + Y + W$$
+
+So, in the case of singular and plural verbs, we can have an additional rule:
+
+$$NP_{sing} + Verb → NP_{sing} + hits$$
+
+With this power, we can describe more generarly the form of grammar associetad with "constituent analysis". So, each such grammar is defined by a finite set Σ of inital strings and a finite set F of 'instruction formulas'(rules) of the form $$X→Y$$ (X does not need to be a single symbol, but only a single symbol of X can be rewritten in forming Y). In the example grammar we were talking about, $$Σ=\{Sentence\}$$ and F was:
+
+$$ F = \{ Sentence → NP + VP, NP → T + N, VP → Verb + NP, T → the, N → man, ball, etc, Verb → hit, took, etc. \} $$
+
+He then proceeds to, elegantly, define **derivations**:
+```
+Given the grammar [Σ, F], we define a derivation as a
+finite sequence of strings, beginning with an initial string of Σ, and
+with each string in the sequence being derived from the preceding
+string by application of one of the instruction formulas of F.
+```
+
+If a string is the last line of a terminated derivation, we say that it is a **terminal string**. I.e. If there are no more rules to expand, the result is a **terminal string**.
+
+A set of strings is called a **terminal language**if it is the set of **terminal strings** for some grammar [Σ, F].
